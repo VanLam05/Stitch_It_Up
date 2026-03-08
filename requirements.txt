@@ -1,0 +1,4 @@
+# Stitch It Up - Requirements
+# Install with: pip install -r requirements.txt
+
+pygame>=2.5.0
