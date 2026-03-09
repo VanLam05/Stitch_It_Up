@@ -397,8 +397,6 @@ class LevelSelectMenu(Menu):
         self._click_back_rect = None
         self._click_prev_rect = None
         self._click_next_rect = None
-        self._last_page_click_ms = -10**9
-        self._page_click_cooldown_ms = 160
 
     def _get_page_info(self):
         total_pages = (self.level_count + self.levels_per_page - 1) // self.levels_per_page
@@ -411,22 +409,12 @@ class LevelSelectMenu(Menu):
     def handle_mouse_click(self, mouse_pos):
         """Handle mouse clicks for level boxes and page navigation."""
         current_page, total_pages = self._get_page_info()
-        now_ms = pygame.time.get_ticks()
-
-        def page_click_allowed():
-            return now_ms - self._last_page_click_ms >= self._page_click_cooldown_ms
 
         if self._click_prev_rect and self._click_prev_rect.collidepoint(mouse_pos) and current_page > 0:
-            if not page_click_allowed():
-                return 'navigate'
-            self._last_page_click_ms = now_ms
             self.selected_index = max(0, (current_page - 1) * self.levels_per_page)
             return 'navigate'
 
         if self._click_next_rect and self._click_next_rect.collidepoint(mouse_pos) and current_page < total_pages - 1:
-            if not page_click_allowed():
-                return 'navigate'
-            self._last_page_click_ms = now_ms
             self.selected_index = min(self.level_count - 1, (current_page + 1) * self.levels_per_page)
             return 'navigate'
 

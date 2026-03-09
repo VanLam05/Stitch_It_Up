@@ -103,7 +103,7 @@ class Game:
         """Handle main menu events"""
         result = self.main_menu.handle_input(event)
 
-        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if result is None and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             mouse_pos = event.pos
             if not self.main_menu.font_option:
                 self.main_menu.init_fonts()
@@ -131,6 +131,13 @@ class Game:
     def _handle_tutorial_events(self, event):
         """Handle tutorial overlay events"""
         result = self.tutorial_overlay.handle_input(event)
+
+        if result is None and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            # Single-click: next page, and close on the last page.
+            self.tutorial_overlay.page += 1
+            if self.tutorial_overlay.page >= len(self.tutorial_overlay.pages):
+                result = 'close'
+
         if result == 'close':
             self.state = STATE_MENU
             
@@ -138,7 +145,7 @@ class Game:
         """Handle level selection events"""
         result = self.level_select.handle_input(event)
 
-        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if result is None and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             result = self.level_select.handle_mouse_click(event.pos)
         
         if result == 'back':
@@ -174,18 +181,16 @@ class Game:
                     self.state = STATE_PAUSED
                     break
                     
-        # Mouse events for shooting
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left click
-                self.is_aiming = False
-                mouse_pos = event.pos
-                self._shoot_needle(mouse_pos)
+        # Mouse events for shooting: one click (mouse down) fires immediately.
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.is_aiming = False
+            self._shoot_needle(event.pos)
                 
     def _handle_pause_events(self, event):
         """Handle pause menu events"""
         result = self.pause_overlay.handle_input(event)
 
-        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if result is None and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             mouse_pos = event.pos
             if not self.pause_overlay.font_option:
                 self.pause_overlay.init_fonts()
@@ -211,7 +216,7 @@ class Game:
         """Handle win/lose screen events"""
         result = self.game_over_overlay.handle_input(event)
 
-        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if result is None and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             mouse_pos = event.pos
             if not self.game_over_overlay.font_option:
                 self.game_over_overlay.init_fonts()
