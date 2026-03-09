@@ -883,15 +883,15 @@ LEVELS = [
 
 
 def _generate_advanced_level(level_number):
-    """Generate harder levels from level 9 onward."""
+    """Generate hard levels from 9 to 30 with scaling hazards and constraints."""
     difficulty = level_number - 8
     movable_count = min(3, 1 + difficulty // 4)
     button_count = movable_count
 
-    # More pressure on thread economy in later levels.
+    # Reduce thread budget as levels increase.
     thread_limit = max(850, 1650 - difficulty * 28)
 
-    # Main traversal platforms (staggered heights get tighter over time).
+    # Platform layout scales upward for harder traversal.
     p1_y = max(500, 560 - difficulty * 4)
     p2_y = max(450, 500 - difficulty * 3)
     p3_y = max(380, 430 - difficulty * 3)
@@ -917,9 +917,9 @@ def _generate_advanced_level(level_number):
         {'x': 1140, 'y': max(120, exit_y - 70)},
     ]
 
-    # Add movable blocks and matching buttons that all unlock one door.
+    # Add movable blocks and matching buttons to unlock the same door.
     button_platform_indices = [1, 2, 3]
-    for i in range(movable_count):
+    for i in range(button_count):
         target_platform = platforms[button_platform_indices[i]]
         button_x = target_platform['x'] + target_platform['width'] // 2 - 22
         button_y = target_platform['y'] - 15
@@ -928,10 +928,9 @@ def _generate_advanced_level(level_number):
         block_x = button_x - 5
         block_y = max(90, 130 + i * 30 + (difficulty % 3) * 15)
         platforms.append({'x': block_x, 'y': block_y, 'width': 60, 'height': 25, 'type': 'movable'})
-
         stitch_points.append({'x': block_x + 20, 'y': max(55, block_y - 60)})
 
-    # Hazard density ramps with difficulty.
+    # Hazard density scales up by difficulty.
     hazard_count = min(7, 2 + difficulty // 3)
     hazards = []
     for i in range(hazard_count):
@@ -940,7 +939,7 @@ def _generate_advanced_level(level_number):
         hazard_type = 'scissors' if (i + difficulty) % 2 == 0 else 'flame'
         hazards.append({'x': hx, 'y': hy, 'width': 42, 'height': 42, 'type': hazard_type})
 
-    level = {
+    return {
         'name': f'Needle Trial {level_number:02d}',
         'player_start': (70, 560),
         'thread_limit': thread_limit,
@@ -952,8 +951,6 @@ def _generate_advanced_level(level_number):
             {'x': 1180, 'y': exit_y - 80, 'width': 40, 'height': 80},
         ],
     }
-
-    return level
 
 
 for level_number in range(9, 31):

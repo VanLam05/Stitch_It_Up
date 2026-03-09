@@ -5,6 +5,8 @@
 
 import pygame
 import math
+import os
+import re
 try:
     from .constants import *
 except ImportError:
@@ -203,6 +205,36 @@ class MainMenu(Menu):
         self.options = ['Start', 'Select Level', 'Tutorial', 'Exit']
         self.needle_pos = [200, 300]
         self.needle_vel = [2, 1.5]
+        self.kim_frames = []
+        self.kim_frame_ms = 110
+        self._load_kim_ui_frames()
+
+    def _load_kim_ui_frames(self):
+        """Load animated needle frames from assets/KIM for UI."""
+        folder_path = os.path.join(os.path.dirname(__file__), 'assets', 'KIM')
+        try:
+            files = [
+                f for f in os.listdir(folder_path)
+                if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))
+            ]
+
+            def natural_key(name):
+                return [int(part) if part.isdigit() else part.lower() for part in re.split(r'(\d+)', name)]
+
+            files.sort(key=natural_key)
+            self.kim_frames = [
+                pygame.image.load(os.path.join(folder_path, filename)).convert_alpha()
+                for filename in files
+            ]
+        except (pygame.error, FileNotFoundError):
+            self.kim_frames = []
+
+    def _get_ui_kim_frame(self):
+        """Get current animated frame for UI needle."""
+        if not self.kim_frames:
+            return None
+        frame_index = (pygame.time.get_ticks() // self.kim_frame_ms) % len(self.kim_frames)
+        return self.kim_frames[frame_index]
         
     def draw(self, screen):
         if not self.font_title:
@@ -290,17 +322,24 @@ class MainMenu(Menu):
             pulse = (math.sin(self.animation_phase * 3) + 1) / 2
             color = (255, 200 + int(55 * pulse), 200)
             
-            # Selection indicator (needle pointing)
+            # Selection indicator (animated needle frame)
             needle_x = SCREEN_WIDTH // 2 - 120
-            pygame.draw.polygon(screen, COLORS['needle'], [
-                (needle_x, y + 10),
-                (needle_x + 20, y + 15),
-                (needle_x, y + 20),
-            ])
+            frame = self._get_ui_kim_frame()
+            if frame:
+                indicator = pygame.transform.smoothscale(frame, (34, 34))
+                screen.blit(indicator, (needle_x - 8, y - 2))
+                thread_start = (needle_x + 26, y + 15)
+            else:
+                pygame.draw.polygon(screen, COLORS['needle'], [
+                    (needle_x, y + 10),
+                    (needle_x + 20, y + 15),
+                    (needle_x, y + 20),
+                ])
+                thread_start = (needle_x + 20, y + 15)
             
             # Thread connecting to text
             pygame.draw.line(screen, COLORS['thread'],
-                           (needle_x + 20, y + 15),
+                           thread_start,
                            (SCREEN_WIDTH // 2 - 80, y + 15), 2)
         else:
             color = (180, 180, 190)
@@ -323,14 +362,24 @@ class MainMenu(Menu):
     def _draw_floating_needle(self, screen):
         """Draw decorative floating needle"""
         x, y = self.needle_pos
+        frame = self._get_ui_kim_frame()
+        if frame:
+            # Rotate sprite so it follows floating direction.
+            angle_deg = -math.degrees(math.atan2(self.needle_vel[1], self.needle_vel[0]))
+            sprite = pygame.transform.smoothscale(frame, (74, 74))
+            rotated = pygame.transform.rotate(sprite, angle_deg)
+            rect = rotated.get_rect(center=(int(x), int(y)))
+            screen.blit(rotated, rect)
+            return
+
         angle = math.atan2(self.needle_vel[1], self.needle_vel[0])
         length = 40
-        
+
         tip_x = x + math.cos(angle) * length
         tip_y = y + math.sin(angle) * length
-        
+
         pygame.draw.line(screen, COLORS['needle'], (x, y), (tip_x, tip_y), 4)
-        pygame.draw.line(screen, (255, 255, 255), 
+        pygame.draw.line(screen, (255, 255, 255),
                         (x + math.cos(angle) * length * 0.7, y + math.sin(angle) * length * 0.7),
                         (tip_x, tip_y), 2)
 

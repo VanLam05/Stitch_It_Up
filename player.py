@@ -5,12 +5,17 @@
 
 import pygame
 import math
+import os
+import re
 try:
     from .constants import *
 except ImportError:
     from constants import *
 
 class Player:
+    _kim_frames = []
+    _kim_frame_ms = 110
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -40,6 +45,32 @@ class Player:
         
         # On bridge/trampoline
         self.on_bridge = False
+
+        # Load animated needle frames once and reuse for all player instances.
+        if not Player._kim_frames:
+            self._load_kim_sprite()
+
+    @classmethod
+    def _load_kim_sprite(cls):
+        """Load needle animation frames from assets/KIM folder."""
+        folder_path = os.path.join(os.path.dirname(__file__), "assets", "KIM")
+        try:
+            files = [
+                f for f in os.listdir(folder_path)
+                if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+            ]
+
+            # Sort naturally: Kim_1, Kim_2, ... Kim_10
+            def natural_key(name):
+                return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", name)]
+
+            files.sort(key=natural_key)
+            cls._kim_frames = []
+            for filename in files:
+                path = os.path.join(folder_path, filename)
+                cls._kim_frames.append(pygame.image.load(path).convert_alpha())
+        except (pygame.error, FileNotFoundError):
+            cls._kim_frames = []
         
     @property
     def rect(self):
@@ -262,62 +293,28 @@ class Player:
         
     def draw(self, screen):
         """Draw the player"""
-        # Draw a needle-like character: thin body, center hole, side eyes, mouth below.
-        body_width = max(14, int(self.width * 0.55))
-        body_height = int(self.height * 1.2)
-        body_x = int(self.x + (self.width - body_width) / 2)
-        body_y = int(self.y - (body_height - self.height) * 0.2)
-        center_x = body_x + body_width // 2
+        if Player._kim_frames:
+            # Keep sprite larger than collision box so the needle remains readable.
+            target_h = int(self.height * 2.5)
+            current_frame = (pygame.time.get_ticks() // Player._kim_frame_ms) % len(Player._kim_frames)
+            base_image = Player._kim_frames[current_frame]
+            aspect = base_image.get_width() / max(1, base_image.get_height())
+            target_w = int(target_h * aspect)
 
-        body_rect = pygame.Rect(body_x, body_y, body_width, body_height)
+            sprite = pygame.transform.smoothscale(base_image, (target_w, target_h))
 
-        # Shadow
-        shadow_rect = pygame.Rect(body_x + 3, body_y + 3, body_width, body_height)
-        pygame.draw.rect(screen, (20, 20, 30), shadow_rect, border_radius=body_width // 2)
+            # Optional horizontal flip to follow movement direction.
+            if not self.facing_right:
+                sprite = pygame.transform.flip(sprite, True, False)
 
-        # Needle shaft
-        pygame.draw.rect(screen, COLORS['needle'], body_rect, border_radius=body_width // 2)
-        pygame.draw.rect(screen, COLORS['player_outline'], body_rect, 2, border_radius=body_width // 2)
+            draw_x = int(self.x + self.width // 2 - target_w // 2)
+            # Align sprite bottom with collision-box bottom so the tip matches ground contact.
+            draw_y = int(self.y + self.height - target_h)
+            screen.blit(sprite, (draw_x, draw_y))
+            return
 
-        # Tip and eye-end cap to make body look longer and sharper
-        tip = [(center_x, body_y - 8), (body_x + 3, body_y + 7), (body_x + body_width - 3, body_y + 7)]
-        pygame.draw.polygon(screen, COLORS['needle_tip'], tip)
-        pygame.draw.polygon(screen, COLORS['player_outline'], tip, 2)
-        pygame.draw.ellipse(
-            screen,
-            COLORS['needle'],
-            (body_x + 2, body_y + body_height - 8, body_width - 4, 12),
-        )
-
-        # Needle hole in the middle (eye of needle)
-        hole_center = (center_x, int(body_y + body_height * 0.42))
-        hole_outer = max(5, body_width // 2 - 1)
-        hole_inner = max(3, hole_outer - 2)
-        pygame.draw.circle(screen, COLORS['player_outline'], hole_center, hole_outer, 2)
-        pygame.draw.circle(screen, COLORS['background'], hole_center, hole_inner)
-
-        # Eyes on two sides of the hole
-        eye_y = hole_center[1]
-        side_offset = hole_outer + 5
-        left_eye = (center_x - side_offset, eye_y)
-        right_eye = (center_x + side_offset, eye_y)
-        pupil_shift = 1 if self.facing_right else -1
-        for ex, ey in (left_eye, right_eye):
-            pygame.draw.circle(screen, (255, 255, 255), (int(ex), int(ey)), 4)
-            pygame.draw.circle(screen, (20, 20, 20), (int(ex + pupil_shift), int(ey)), 2)
-
-        # Mouth right under the hole
-        mouth_rect = pygame.Rect(center_x - 8, hole_center[1] + 8, 16, 8)
-        pygame.draw.arc(screen, (40, 40, 40), mouth_rect, math.radians(20), math.radians(160), 2)
-
-        # Small highlight line on the shaft
-        pygame.draw.line(
-            screen,
-            (235, 235, 235),
-            (body_x + 4, body_y + 10),
-            (body_x + 4, body_y + body_height - 16),
-            1,
-        )
+        # Fallback if image is unavailable.
+        pygame.draw.rect(screen, COLORS['needle'], self.rect, border_radius=6)
             
     def check_hazard_collision(self, hazards):
         """Check if player touches any hazard"""
