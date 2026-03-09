@@ -393,6 +393,55 @@ class LevelSelectMenu(Menu):
         self.unlocked_levels = unlocked_levels or [True] + [False] * (level_count - 1)
         self.options = list(range(level_count)) + ['back']
         self.levels_per_page = 9
+        self._click_level_boxes = []
+        self._click_back_rect = None
+        self._click_prev_rect = None
+        self._click_next_rect = None
+        self._last_page_click_ms = -10**9
+        self._page_click_cooldown_ms = 160
+
+    def _get_page_info(self):
+        total_pages = (self.level_count + self.levels_per_page - 1) // self.levels_per_page
+        if self.selected_index == len(self.options) - 1:
+            current_page = max(0, total_pages - 1)
+        else:
+            current_page = self.selected_index // self.levels_per_page
+        return current_page, max(1, total_pages)
+
+    def handle_mouse_click(self, mouse_pos):
+        """Handle mouse clicks for level boxes and page navigation."""
+        current_page, total_pages = self._get_page_info()
+        now_ms = pygame.time.get_ticks()
+
+        def page_click_allowed():
+            return now_ms - self._last_page_click_ms >= self._page_click_cooldown_ms
+
+        if self._click_prev_rect and self._click_prev_rect.collidepoint(mouse_pos) and current_page > 0:
+            if not page_click_allowed():
+                return 'navigate'
+            self._last_page_click_ms = now_ms
+            self.selected_index = max(0, (current_page - 1) * self.levels_per_page)
+            return 'navigate'
+
+        if self._click_next_rect and self._click_next_rect.collidepoint(mouse_pos) and current_page < total_pages - 1:
+            if not page_click_allowed():
+                return 'navigate'
+            self._last_page_click_ms = now_ms
+            self.selected_index = min(self.level_count - 1, (current_page + 1) * self.levels_per_page)
+            return 'navigate'
+
+        for level_index, box_rect, unlocked in self._click_level_boxes:
+            if box_rect.collidepoint(mouse_pos):
+                if unlocked:
+                    self.selected_index = level_index
+                    return level_index
+                return 'navigate'
+
+        if self._click_back_rect and self._click_back_rect.collidepoint(mouse_pos):
+            self.selected_index = len(self.options) - 1
+            return 'back'
+
+        return None
         
     def draw(self, screen, level_names):
         if not self.font_title:
@@ -408,12 +457,7 @@ class LevelSelectMenu(Menu):
         # Level grid (paged to support large level counts)
         cols = 3
         rows = (self.levels_per_page + cols - 1) // cols
-        total_pages = (self.level_count + self.levels_per_page - 1) // self.levels_per_page
-
-        if self.selected_index == len(self.options) - 1:
-            current_page = max(0, total_pages - 1)
-        else:
-            current_page = self.selected_index // self.levels_per_page
+        current_page, total_pages = self._get_page_info()
 
         start_level = current_page * self.levels_per_page
         end_level = min(self.level_count, start_level + self.levels_per_page)
@@ -425,6 +469,8 @@ class LevelSelectMenu(Menu):
         
         start_x = (SCREEN_WIDTH - (cols * box_width + (cols - 1) * spacing_x)) // 2
         start_y = 180
+
+        self._click_level_boxes = []
         
         for i in range(start_level, end_level):
             display_index = i - start_level
@@ -440,6 +486,7 @@ class LevelSelectMenu(Menu):
             self._draw_level_box(screen, x, y, box_width, box_height,
                                 i + 1, level_names[i] if i < len(level_names) else f"Level {i+1}",
                                 is_selected, is_unlocked)
+            self._click_level_boxes.append((i, pygame.Rect(x, y, box_width, box_height), is_unlocked))
         
         # Back button
         back_y = start_y + rows * (box_height + spacing_y) + 30
@@ -449,9 +496,29 @@ class LevelSelectMenu(Menu):
         back_text = self.font_option.render("<- Back", True, back_color)
         back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, back_y))
         screen.blit(back_text, back_rect)
+        self._click_back_rect = back_rect.inflate(30, 16)
+
+        # Explicit page navigation buttons for mouse users.
+        nav_y = 140
+        prev_enabled = current_page > 0
+        next_enabled = current_page < total_pages - 1
+
+        prev_color = COLORS['thread'] if prev_enabled else (100, 100, 110)
+        next_color = COLORS['thread'] if next_enabled else (100, 100, 110)
+
+        prev_text = self.font_small.render("< Prev", True, prev_color)
+        next_text = self.font_small.render("Next >", True, next_color)
+
+        prev_rect = prev_text.get_rect(center=(SCREEN_WIDTH // 2 - 190, nav_y))
+        next_rect = next_text.get_rect(center=(SCREEN_WIDTH // 2 + 190, nav_y))
+        screen.blit(prev_text, prev_rect)
+        screen.blit(next_text, next_rect)
+
+        self._click_prev_rect = prev_rect.inflate(20, 12)
+        self._click_next_rect = next_rect.inflate(20, 12)
 
         page_text = self.font_small.render(
-            f"Page {current_page + 1}/{max(1, total_pages)}  (Use Up/Down to navigate)",
+            f"Page {current_page + 1}/{max(1, total_pages)}  (Mouse or Up/Down)",
             True,
             (180, 180, 190),
         )

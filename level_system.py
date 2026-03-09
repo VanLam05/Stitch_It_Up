@@ -885,76 +885,108 @@ LEVELS = [
 
 
 def _generate_advanced_level(level_number):
-    """Generate challenge levels from 9 to 30 with stronger scaling."""
+    """Generate diverse challenge levels from 9 to 30 with progressive complexity."""
     difficulty = level_number - 8
-    movable_count = min(3, 1 + difficulty // 6)
-    button_count = max(1, movable_count)
+    phase = (difficulty - 1) // 6  # 0..3
+    sub_phase = (difficulty - 1) % 6
 
-    # Later levels have tighter thread economy.
-    thread_limit = max(700, 1300 - difficulty * 22)
+    phase_names = ["Ramp Trial", "Split Weave", "Zigzag Rift", "Chaos Loom"]
 
-    # Core traversal path rises and narrows with difficulty.
-    step = max(140, 185 - difficulty * 2)
-    width_main = max(88, 150 - difficulty * 2)
-    y_gain = min(250, 70 + difficulty * 8)
+    # Thread becomes stricter as phase and difficulty increase.
+    thread_limit = max(620, 1280 - difficulty * 20 - phase * 30)
 
-    platforms = [
-        {'x': 35, 'y': 620, 'width': 180, 'height': 30},
-    ]
-    for i in range(1, 7):
-        px = 35 + i * step
-        py = 620 - int((i / 6) * y_gain) - (i % 2) * 25
-        py = max(250, py)
-        platforms.append({'x': px, 'y': py, 'width': width_main, 'height': 28})
+    platforms = [{'x': 35, 'y': 620, 'width': 180, 'height': 30}]
+
+    if phase == 0:
+        # Gentle rising staircase.
+        base_w = max(105, 150 - sub_phase * 6)
+        xs = [220, 400, 580, 760, 940, 1100]
+        ys = [565, 525, 490, 450, 410, 360]
+        for i in range(len(xs)):
+            platforms.append({'x': xs[i], 'y': ys[i] - sub_phase * 3, 'width': base_w, 'height': 28})
+    elif phase == 1:
+        # Alternating islands with bigger vertical rhythm.
+        base_w = max(96, 132 - sub_phase * 5)
+        xs = [210, 360, 520, 690, 850, 1010, 1140]
+        ys = [520, 590, 455, 560, 415, 500, 335]
+        for i in range(len(xs)):
+            y = max(255, ys[i] - sub_phase * 4)
+            platforms.append({'x': xs[i], 'y': y, 'width': base_w, 'height': 26})
+    elif phase == 2:
+        # Tight zigzag with quick height switches.
+        base_w = max(88, 116 - sub_phase * 4)
+        xs = [190, 330, 470, 610, 760, 920, 1080, 1170]
+        ys = [555, 470, 590, 430, 560, 385, 505, 310]
+        for i in range(len(xs)):
+            y = max(245, ys[i] - sub_phase * 5)
+            platforms.append({'x': xs[i], 'y': y, 'width': base_w, 'height': 24})
+    else:
+        # Endgame gauntlet: many narrow, closely packed platforms.
+        base_w = max(74, 94 - sub_phase * 3)
+        xs = [160, 270, 390, 510, 640, 770, 900, 1030, 1140]
+        ys = [575, 535, 490, 445, 405, 365, 330, 295, 265]
+        for i in range(len(xs)):
+            y = max(230, ys[i] - sub_phase * 4 - (i % 2) * 10)
+            platforms.append({'x': xs[i], 'y': y, 'width': base_w, 'height': 22})
 
     exit_platform = platforms[-1]
-    exit_y = exit_platform['y']
 
-    # Stitch points for upward pathing.
-    stitch_points = [
-        {'x': 105, 'y': 545},
-    ]
+    stitch_points = [{'x': 105, 'y': 545}]
     for i, platform in enumerate(platforms[1:], start=1):
-        offset_up = 85 + (i % 2) * 12
+        offset = 72 + (i % 2) * 15 + phase * 4
         stitch_points.append({
             'x': platform['x'] + platform['width'] // 2,
-            'y': max(80, platform['y'] - offset_up),
+            'y': max(75, platform['y'] - offset),
         })
 
+    # Higher phases add extra routing anchors to avoid dead-ends.
+    if phase >= 2:
+        stitch_points.append({'x': 640, 'y': 180})
+    if phase >= 3:
+        stitch_points.append({'x': 930, 'y': 145})
+
+    movable_count = min(3, 1 + phase)
+    button_count = min(3, 1 + difficulty // 7)
+
     buttons = []
-
-    # Door button logic: early advanced levels require player press,
-    # later levels require moving block drops.
+    button_host_indices = [2, 4, 6]
     for i in range(button_count):
-        button_host = platforms[min(2 + i, len(platforms) - 2)]
-        button_x = button_host['x'] + button_host['width'] // 2 - 24
-        button_y = button_host['y'] - 15
-        buttons.append({'x': button_x, 'y': button_y, 'linked_door': 0})
+        host_idx = min(button_host_indices[i], len(platforms) - 2)
+        host = platforms[host_idx]
+        bx = host['x'] + host['width'] // 2 - 24
+        by = host['y'] - 15
+        buttons.append({'x': bx, 'y': by, 'linked_door': 0})
 
-        if movable_count > 0 and i < movable_count:
-            block_x = button_x - 2
-            block_y = max(95, 180 - difficulty * 3 + i * 28)
+        if i < movable_count:
+            # Drop blocks start high and get less forgiving in later levels.
+            block_y = max(72, 190 - difficulty * 4 + i * 20)
+            block_x = max(80, min(1180, bx - 3))
             platforms.append({'x': block_x, 'y': block_y, 'width': 58, 'height': 24, 'type': 'movable'})
-            stitch_points.append({'x': block_x + 24, 'y': max(55, block_y - 65)})
+            stitch_points.append({'x': block_x + 25, 'y': max(52, block_y - 62)})
 
-    # Hazards: scissors become thread traps, flames punish direct contact.
-    scissor_count = min(7, 2 + difficulty // 3)
-    flame_count = min(6, 2 + difficulty // 4)
+    # Hazards scale both in count and variety density.
+    scissor_count = min(9, 2 + difficulty // 2)
+    flame_count = min(8, 1 + difficulty // 3 + phase)
     hazards = []
 
+    core_platforms = platforms[1:max(2, len(platforms) - movable_count)]
+    if not core_platforms:
+        core_platforms = platforms[1:]
+
     for i in range(scissor_count):
-        hx = 220 + i * max(110, 150 - difficulty)
-        hy = 560 - (i % 3) * 70
+        host = core_platforms[i % len(core_platforms)]
+        hx = host['x'] + host['width'] // 2 - 22 + ((i % 3) - 1) * 12
+        hy = host['y'] - 54 - (i % 2) * 10
         hazards.append({'x': hx, 'y': hy, 'width': 44, 'height': 44, 'type': 'scissors'})
 
     for i in range(flame_count):
-        host = platforms[min(i + 1, len(platforms) - 1)]
-        fx = host['x'] + host['width'] // 2 - 18
-        fy = host['y'] - 42
+        host = core_platforms[(i * 2 + 1) % len(core_platforms)]
+        fx = host['x'] + host['width'] // 2 - 18 + ((i % 2) * 16 - 8)
+        fy = host['y'] - 40 - (phase * 2)
         hazards.append({'x': fx, 'y': fy, 'width': 38, 'height': 38, 'type': 'flame'})
 
     return {
-        'name': f'Needle Trial {level_number:02d}',
+        'name': f'{phase_names[phase]} {level_number:02d}',
         'player_start': (70, 560),
         'thread_limit': thread_limit,
         'platforms': platforms,
@@ -962,7 +994,12 @@ def _generate_advanced_level(level_number):
         'hazards': hazards,
         'buttons': buttons,
         'doors': [
-            {'x': exit_platform['x'] + exit_platform['width'] - 40, 'y': exit_y - 82, 'width': 40, 'height': 82},
+            {
+                'x': exit_platform['x'] + exit_platform['width'] - 40,
+                'y': exit_platform['y'] - 82,
+                'width': 40,
+                'height': 82,
+            },
         ],
     }
 

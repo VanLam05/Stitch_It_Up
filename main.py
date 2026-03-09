@@ -104,7 +104,7 @@ class Game:
         result = self.main_menu.handle_input(event)
 
         if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos = event.pos
             if not self.main_menu.font_option:
                 self.main_menu.init_fonts()
 
@@ -137,6 +137,9 @@ class Game:
     def _handle_level_select_events(self, event):
         """Handle level selection events"""
         result = self.level_select.handle_input(event)
+
+        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            result = self.level_select.handle_mouse_click(event.pos)
         
         if result == 'back':
             self.state = STATE_MENU
@@ -171,16 +174,11 @@ class Game:
                     self.state = STATE_PAUSED
                     break
                     
-        # Mouse events for aiming and shooting
+        # Mouse events for shooting
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
-                self.is_aiming = True
-                self.aim_start_pos = self.player.center
-                
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1 and self.is_aiming:
                 self.is_aiming = False
-                mouse_pos = pygame.mouse.get_pos()
+                mouse_pos = event.pos
                 self._shoot_needle(mouse_pos)
                 
     def _handle_pause_events(self, event):
@@ -188,7 +186,7 @@ class Game:
         result = self.pause_overlay.handle_input(event)
 
         if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos = event.pos
             if not self.pause_overlay.font_option:
                 self.pause_overlay.init_fonts()
 
@@ -214,7 +212,7 @@ class Game:
         result = self.game_over_overlay.handle_input(event)
 
         if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos = event.pos
             if not self.game_over_overlay.font_option:
                 self.game_over_overlay.init_fonts()
 
