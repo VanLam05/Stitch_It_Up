@@ -316,10 +316,12 @@ class Player:
         # Fallback if image is unavailable.
         pygame.draw.rect(screen, COLORS['needle'], self.rect, border_radius=6)
             
-    def check_hazard_collision(self, hazards):
-        """Check if player touches any hazard"""
+    def check_hazard_collision(self, hazards, hazard_types=None):
+        """Check if player touches hazards, optionally filtered by hazard type."""
         player_rect = self.rect
         for hazard in hazards:
+            if hazard_types and hazard.hazard_type not in hazard_types:
+                continue
             if player_rect.colliderect(hazard.rect):
                 return True
         return False

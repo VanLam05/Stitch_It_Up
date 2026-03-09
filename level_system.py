@@ -291,7 +291,6 @@ class Button:
     
     def update(self, objects_on_button):
         """Check if something is pressing the button"""
-        was_pressed = self.pressed
         self.pressed = len(objects_on_button) > 0
         
         if self.pressed:
@@ -662,7 +661,7 @@ LEVELS = [
             {'x': 750, 'y': 430},
         ],
         'hazards': [
-            {'x': 300, 'y': 620, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 560, 'y': 455, 'width': 40, 'height': 40, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 520, 'y': 485, 'linked_door': 0},  # Button
@@ -719,7 +718,7 @@ LEVELS = [
             {'x': 750, 'y': 350},
         ],
         'hazards': [
-            {'x': 380, 'y': 400, 'width': 50, 'height': 50, 'type': 'scissors'},
+            {'x': 380, 'y': 400, 'width': 44, 'height': 44, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 420, 'y': 485, 'linked_door': 0},  # Button under the movable block
@@ -753,6 +752,7 @@ LEVELS = [
         'hazards': [
             {'x': 420, 'y': 550, 'width': 40, 'height': 40, 'type': 'flame'},
             {'x': 720, 'y': 400, 'width': 50, 'height': 50, 'type': 'scissors'},
+            {'x': 930, 'y': 320, 'width': 40, 'height': 40, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 560, 'y': 435, 'linked_door': 0},  # Button under movable block
@@ -787,6 +787,7 @@ LEVELS = [
         'hazards': [
             {'x': 450, 'y': 500, 'width': 50, 'height': 50, 'type': 'scissors'},
             {'x': 750, 'y': 350, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 980, 'y': 260, 'width': 44, 'height': 44, 'type': 'scissors'},
         ],
         'buttons': [
             {'x': 320, 'y': 485, 'linked_door': 0},  # Button 1 - under block 1
@@ -821,10 +822,11 @@ LEVELS = [
             {'x': 1100, 'y': 150},
         ],
         'hazards': [
-            {'x': 200, 'y': 380, 'width': 40, 'height': 40, 'type': 'scissors'},
-            {'x': 380, 'y': 330, 'width': 40, 'height': 40, 'type': 'scissors'},
-            {'x': 580, 'y': 280, 'width': 40, 'height': 40, 'type': 'scissors'},
-            {'x': 780, 'y': 230, 'width': 40, 'height': 40, 'type': 'scissors'},
+            {'x': 200, 'y': 380, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 380, 'y': 330, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 580, 'y': 280, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 780, 'y': 230, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 980, 'y': 200, 'width': 38, 'height': 38, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 470, 'y': 385, 'linked_door': 0},
@@ -847,7 +849,7 @@ LEVELS = [
             {'x': 550, 'y': 150, 'width': 60, 'height': 25, 'type': 'movable'},   # Block 2
             {'x': 600, 'y': 380, 'width': 80, 'height': 30},
             {'x': 780, 'y': 320, 'width': 80, 'height': 30},
-            {'x': 900, 'y': 130, 'width': 60, 'height': 25, 'type': 'movable'},   # Block 3
+            {'x': 900, 'y': 45, 'width': 60, 'height': 25, 'type': 'movable'},   # Block 3 (raised much higher)
             {'x': 950, 'y': 260, 'width': 100, 'height': 30},
             {'x': 1100, 'y': 200, 'width': 100, 'height': 30},
         ],
@@ -859,8 +861,7 @@ LEVELS = [
             {'x': 520, 'y': 100},   # Block 2 high
             {'x': 650, 'y': 280},
             {'x': 800, 'y': 220},
-            {'x': 880, 'y': 80},    # Block 3 high
-            {'x': 1000, 'y': 160},
+            {'x': 1000, 'y': 185},  # Right anchor near Block 3 lowered slightly
             {'x': 1150, 'y': 120},
         ],
         'hazards': [
@@ -869,6 +870,7 @@ LEVELS = [
             {'x': 700, 'y': 350, 'width': 50, 'height': 50, 'type': 'scissors'},
             {'x': 860, 'y': 290, 'width': 40, 'height': 40, 'type': 'flame'},
             {'x': 1020, 'y': 230, 'width': 40, 'height': 40, 'type': 'scissors'},
+            {'x': 1120, 'y': 180, 'width': 38, 'height': 38, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 220, 'y': 485, 'linked_door': 0},   # Button 1
@@ -883,61 +885,73 @@ LEVELS = [
 
 
 def _generate_advanced_level(level_number):
-    """Generate hard levels from 9 to 30 with scaling hazards and constraints."""
+    """Generate challenge levels from 9 to 30 with stronger scaling."""
     difficulty = level_number - 8
-    movable_count = min(3, 1 + difficulty // 4)
-    button_count = movable_count
+    movable_count = min(3, 1 + difficulty // 6)
+    button_count = max(1, movable_count)
 
-    # Reduce thread budget as levels increase.
-    thread_limit = max(850, 1650 - difficulty * 28)
+    # Later levels have tighter thread economy.
+    thread_limit = max(700, 1300 - difficulty * 22)
 
-    # Platform layout scales upward for harder traversal.
-    p1_y = max(500, 560 - difficulty * 4)
-    p2_y = max(450, 500 - difficulty * 3)
-    p3_y = max(380, 430 - difficulty * 3)
-    p4_y = max(320, 360 - difficulty * 2)
-    exit_y = max(250, 300 - difficulty * 2)
+    # Core traversal path rises and narrows with difficulty.
+    step = max(140, 185 - difficulty * 2)
+    width_main = max(88, 150 - difficulty * 2)
+    y_gain = min(250, 70 + difficulty * 8)
 
     platforms = [
-        {'x': 40, 'y': 620, 'width': 170, 'height': 30},
-        {'x': 240, 'y': p1_y, 'width': 130, 'height': 30},
-        {'x': 460, 'y': p2_y, 'width': 130, 'height': 30},
-        {'x': 680, 'y': p3_y, 'width': 130, 'height': 30},
-        {'x': 900, 'y': p4_y, 'width': 140, 'height': 30},
-        {'x': 1080, 'y': exit_y, 'width': 140, 'height': 30},
+        {'x': 35, 'y': 620, 'width': 180, 'height': 30},
     ]
+    for i in range(1, 7):
+        px = 35 + i * step
+        py = 620 - int((i / 6) * y_gain) - (i % 2) * 25
+        py = max(250, py)
+        platforms.append({'x': px, 'y': py, 'width': width_main, 'height': 28})
+
+    exit_platform = platforms[-1]
+    exit_y = exit_platform['y']
+
+    # Stitch points for upward pathing.
+    stitch_points = [
+        {'x': 105, 'y': 545},
+    ]
+    for i, platform in enumerate(platforms[1:], start=1):
+        offset_up = 85 + (i % 2) * 12
+        stitch_points.append({
+            'x': platform['x'] + platform['width'] // 2,
+            'y': max(80, platform['y'] - offset_up),
+        })
 
     buttons = []
-    stitch_points = [
-        {'x': 120, 'y': 560},
-        {'x': 300, 'y': p1_y - 90},
-        {'x': 520, 'y': p2_y - 85},
-        {'x': 740, 'y': p3_y - 85},
-        {'x': 960, 'y': p4_y - 80},
-        {'x': 1140, 'y': max(120, exit_y - 70)},
-    ]
 
-    # Add movable blocks and matching buttons to unlock the same door.
-    button_platform_indices = [1, 2, 3]
+    # Door button logic: early advanced levels require player press,
+    # later levels require moving block drops.
     for i in range(button_count):
-        target_platform = platforms[button_platform_indices[i]]
-        button_x = target_platform['x'] + target_platform['width'] // 2 - 22
-        button_y = target_platform['y'] - 15
+        button_host = platforms[min(2 + i, len(platforms) - 2)]
+        button_x = button_host['x'] + button_host['width'] // 2 - 24
+        button_y = button_host['y'] - 15
         buttons.append({'x': button_x, 'y': button_y, 'linked_door': 0})
 
-        block_x = button_x - 5
-        block_y = max(90, 130 + i * 30 + (difficulty % 3) * 15)
-        platforms.append({'x': block_x, 'y': block_y, 'width': 60, 'height': 25, 'type': 'movable'})
-        stitch_points.append({'x': block_x + 20, 'y': max(55, block_y - 60)})
+        if movable_count > 0 and i < movable_count:
+            block_x = button_x - 2
+            block_y = max(95, 180 - difficulty * 3 + i * 28)
+            platforms.append({'x': block_x, 'y': block_y, 'width': 58, 'height': 24, 'type': 'movable'})
+            stitch_points.append({'x': block_x + 24, 'y': max(55, block_y - 65)})
 
-    # Hazard density scales up by difficulty.
-    hazard_count = min(7, 2 + difficulty // 3)
+    # Hazards: scissors become thread traps, flames punish direct contact.
+    scissor_count = min(7, 2 + difficulty // 3)
+    flame_count = min(6, 2 + difficulty // 4)
     hazards = []
-    for i in range(hazard_count):
-        hx = 280 + i * 130
-        hy = 610 - (i % 3) * 75
-        hazard_type = 'scissors' if (i + difficulty) % 2 == 0 else 'flame'
-        hazards.append({'x': hx, 'y': hy, 'width': 42, 'height': 42, 'type': hazard_type})
+
+    for i in range(scissor_count):
+        hx = 220 + i * max(110, 150 - difficulty)
+        hy = 560 - (i % 3) * 70
+        hazards.append({'x': hx, 'y': hy, 'width': 44, 'height': 44, 'type': 'scissors'})
+
+    for i in range(flame_count):
+        host = platforms[min(i + 1, len(platforms) - 1)]
+        fx = host['x'] + host['width'] // 2 - 18
+        fy = host['y'] - 42
+        hazards.append({'x': fx, 'y': fy, 'width': 38, 'height': 38, 'type': 'flame'})
 
     return {
         'name': f'Needle Trial {level_number:02d}',
@@ -948,7 +962,7 @@ def _generate_advanced_level(level_number):
         'hazards': hazards,
         'buttons': buttons,
         'doors': [
-            {'x': 1180, 'y': exit_y - 80, 'width': 40, 'height': 80},
+            {'x': exit_platform['x'] + exit_platform['width'] - 40, 'y': exit_y - 82, 'width': 40, 'height': 82},
         ],
     }
 

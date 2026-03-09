@@ -62,10 +62,14 @@ class Needle:
         """Update needle position and check for hits"""
         if not self.active:
             return None
+
+        prev_tip = self.tip_position
             
         # Move needle
         self.x += self.vel_x
         self.y += self.vel_y
+
+        current_tip = self.tip_position
         
         # Check distance traveled
         if self.origin_point:
@@ -76,17 +80,16 @@ class Needle:
                 self.recall()
                 return None
         
-        # Check collision with stitch points
-        hit_point = self._check_stitch_collision(stitch_points)
-        if hit_point:
-            self.embed(hit_point.center)
-            return ('stitch_point', hit_point)
-            
-        # Check collision with platforms
-        hit_platform = self._check_platform_collision(platforms)
-        if hit_platform:
-            self.embed(self.tip_position)
-            return ('platform', hit_platform)
+        # Check first collision along travel segment.
+        hit = self._check_first_collision(prev_tip, current_tip, stitch_points, platforms)
+        if hit:
+            hit_type, hit_object, hit_pos = hit
+            if hit_type == 'stitch_point':
+                self.embed(hit_object.center)
+                return ('stitch_point', hit_object)
+
+            self.embed(hit_pos)
+            return ('platform', hit_object)
             
         return None
     
@@ -107,9 +110,69 @@ class Needle:
         tip_x, tip_y = self.tip_position
         needle_rect = pygame.Rect(tip_x - 2, tip_y - 2, 4, 4)
         for platform in platforms:
+            if not getattr(platform, 'is_movable', False):
+                continue
             if needle_rect.colliderect(platform.rect):
                 return platform
         return None
+
+    def _check_first_collision(self, start_tip, end_tip, stitch_points, platforms):
+        """Return the first object hit along the needle segment this frame."""
+        sx, sy = start_tip
+        ex, ey = end_tip
+        dx = ex - sx
+        dy = ey - sy
+        seg_len_sq = dx * dx + dy * dy
+        seg_len = math.sqrt(seg_len_sq)
+
+        if seg_len_sq == 0:
+            return None
+
+        best_t = 2.0
+        best_hit = None
+
+        # Stitch-point test using closest point on movement segment.
+        for sp in stitch_points:
+            if not sp.active:
+                continue
+
+            cx, cy = sp.center
+            t = ((cx - sx) * dx + (cy - sy) * dy) / seg_len_sq
+            t = max(0.0, min(1.0, t))
+            closest_x = sx + t * dx
+            closest_y = sy + t * dy
+            dist = math.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
+
+            if dist <= sp.radius + 5 and t < best_t:
+                best_t = t
+                best_hit = ('stitch_point', sp, (closest_x, closest_y))
+
+        # Platform test using line-rect clip intersection.
+        for platform in platforms:
+            # Do not attach thread to normal path platforms.
+            if not getattr(platform, 'is_movable', False):
+                continue
+
+            clipped = platform.rect.clipline((sx, sy), (ex, ey))
+            if not clipped:
+                continue
+
+            if len(clipped) == 2 and isinstance(clipped[0], (tuple, list)):
+                p1, p2 = clipped
+            else:
+                p1 = (clipped[0], clipped[1])
+                p2 = (clipped[2], clipped[3])
+
+            d1 = math.sqrt((p1[0] - sx) ** 2 + (p1[1] - sy) ** 2)
+            d2 = math.sqrt((p2[0] - sx) ** 2 + (p2[1] - sy) ** 2)
+            entry = p1 if d1 <= d2 else p2
+            t = (math.sqrt((entry[0] - sx) ** 2 + (entry[1] - sy) ** 2) / seg_len)
+
+            if t < best_t:
+                best_t = t
+                best_hit = ('platform', platform, entry)
+
+        return best_hit
     
     def embed(self, point):
         """Embed needle at a point"""

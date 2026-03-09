@@ -42,8 +42,9 @@ class Game:
         # Level management
         self.current_level_index = 0
         self.current_level = None
-        self.unlocked_levels = [True] + [False] * (get_level_count() - 1)
-        
+        # self.unlocked_levels = [True] + [False] * (get_level_count() - 1)
+        self.unlocked_levels = [True] * get_level_count()  # Unlock all levels for testing
+       
         # Game objects
         self.player = None
         self.thread_manager = None
@@ -101,6 +102,20 @@ class Game:
     def _handle_menu_events(self, event):
         """Handle main menu events"""
         result = self.main_menu.handle_input(event)
+
+        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = pygame.mouse.get_pos()
+            if not self.main_menu.font_option:
+                self.main_menu.init_fonts()
+
+            start_y = SCREEN_HEIGHT // 2
+            for i, option in enumerate(self.main_menu.options):
+                y = start_y + i * 60
+                option_surface = self.main_menu.font_option.render(option, True, COLORS['ui_text'])
+                option_rect = option_surface.get_rect(center=(SCREEN_WIDTH // 2, y + 15))
+                if option_rect.inflate(40, 20).collidepoint(mouse_pos):
+                    result = option
+                    break
         
         if result == 'Start':
             self.start_level(0)
@@ -171,6 +186,21 @@ class Game:
     def _handle_pause_events(self, event):
         """Handle pause menu events"""
         result = self.pause_overlay.handle_input(event)
+
+        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = pygame.mouse.get_pos()
+            if not self.pause_overlay.font_option:
+                self.pause_overlay.init_fonts()
+
+            box_height = 300
+            box_y = (SCREEN_HEIGHT - box_height) // 2
+            for i, option in enumerate(self.pause_overlay.options):
+                y = box_y + 120 + i * 50
+                option_surface = self.pause_overlay.font_option.render(option, True, COLORS['ui_text'])
+                option_rect = option_surface.get_rect(center=(SCREEN_WIDTH // 2, y))
+                if option_rect.inflate(40, 20).collidepoint(mouse_pos):
+                    result = option
+                    break
         
         if result == 'Continue':
             self.state = STATE_PLAYING
@@ -182,6 +212,19 @@ class Game:
     def _handle_game_over_events(self, event):
         """Handle win/lose screen events"""
         result = self.game_over_overlay.handle_input(event)
+
+        if result is None and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = pygame.mouse.get_pos()
+            if not self.game_over_overlay.font_option:
+                self.game_over_overlay.init_fonts()
+
+            for i, option in enumerate(self.game_over_overlay.options):
+                y = SCREEN_HEIGHT // 2 + 50 + i * 50
+                option_surface = self.game_over_overlay.font_option.render(option, True, COLORS['ui_text'])
+                option_rect = option_surface.get_rect(center=(SCREEN_WIDTH // 2, y))
+                if option_rect.inflate(40, 20).collidepoint(mouse_pos):
+                    result = option
+                    break
         
         if result == 'Continue':
             if self.state == STATE_WIN:
@@ -291,8 +334,11 @@ class Game:
         # Check win/lose conditions
         self._check_game_conditions()
         
-        # Check hazard thread cutting (scissors cut threads)
+        # Check hazard interactions: scissors cut thread, flames burn player.
         for hazard in self.current_level.hazards:
+            if hazard.hazard_type != 'scissors':
+                continue
+
             # Check if grapple thread is cut while swinging
             if self.player.is_swinging and self.thread_manager.grapple_connection:
                 grapple = self.thread_manager.grapple_connection
@@ -309,7 +355,7 @@ class Game:
                     self.screen_shake = 8
                     continue
             
-            # Cut other threads near hazard
+            # Cut other threads near scissors
             if self.thread_manager.cut_threads_at_position(hazard.center, 30):
                 self._add_cut_particles(hazard.center)
             
@@ -349,9 +395,9 @@ class Game:
             self._trigger_lose(LOSE_FALL, "Fell into the void!")
             return
             
-        # Lose condition: hit hazard
-        if self.player.check_hazard_collision(self.current_level.hazards):
-            self._trigger_lose(LOSE_HAZARD, "Hit a hazard!")
+        # Lose condition: only flames kill the player
+        if self.player.check_hazard_collision(self.current_level.hazards, hazard_types={'flame'}):
+            self._trigger_lose(LOSE_HAZARD, "Burned by flame!")
             return
             
         # Lose condition: out of thread (only if needle not embedded and can't reach goal)
