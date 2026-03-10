@@ -487,6 +487,169 @@ class Hazard:
             pygame.draw.polygon(screen, colors[i], points)
 
 
+class Enemy:
+    """Moving monster that can kill the player and be tied by thread."""
+
+    def __init__(
+        self,
+        x,
+        y,
+        width=44,
+        height=36,
+        speed=1.5,
+        patrol_range=120,
+        left=None,
+        right=None,
+        movement='ground',
+        fly_range_y=28,
+    ):
+        self.x = float(x)
+        self.y = float(y)
+        self.width = width
+        self.height = height
+        self.speed = speed
+
+        self.start_x = float(x)
+        self.start_y = float(y)
+        self.left_bound = float(left) if left is not None else self.start_x - patrol_range
+        self.right_bound = float(right) if right is not None else self.start_x + patrol_range
+        self.direction = 1
+        self.movement = movement
+        self.fly_range_y = fly_range_y
+
+        self.active = True
+        self.is_tied = False
+        self.tied_anchor = None
+        self.tied_timer = 0
+        self.vel_y = 0
+        self.anim_phase = 0
+
+    @property
+    def rect(self):
+        return pygame.Rect(int(self.x), int(self.y), self.width, self.height)
+
+    @property
+    def center(self):
+        return (int(self.x + self.width // 2), int(self.y + self.height // 2))
+
+    @property
+    def can_hurt_player(self):
+        return self.active and not self.is_tied
+
+    @property
+    def can_be_targeted(self):
+        return self.active and not self.is_tied
+
+    def hit_by_thread(self, anchor_point):
+        """Enter tied state and start falling when shot by the needle."""
+        if not self.can_be_targeted:
+            return False
+        self.is_tied = True
+        self.tied_anchor = anchor_point
+        self.tied_timer = 30
+        self.vel_y = 1.5
+        return True
+
+    def update(self, platforms=None):
+        if not self.active:
+            return
+
+        self.anim_phase += 1
+
+        if self.is_tied:
+            self.tied_timer = max(0, self.tied_timer - 1)
+            self.vel_y = min(self.vel_y + 0.35, 10)
+            self.y += self.vel_y
+            if self.y > SCREEN_HEIGHT + 120:
+                self.active = False
+            return
+
+        self.x += self.direction * self.speed
+        if self.x <= self.left_bound:
+            self.x = self.left_bound
+            self.direction = 1
+        elif self.x + self.width >= self.right_bound:
+            self.x = self.right_bound - self.width
+            self.direction = -1
+
+        if self.movement == 'flying':
+            self.y = self.start_y + math.sin(self.anim_phase * 0.12) * self.fly_range_y
+        else:
+            self.y = self.start_y + math.sin(self.anim_phase * 0.09) * 2
+
+    def reset(self):
+        self.x = self.start_x
+        self.y = self.start_y
+        self.direction = 1
+        self.active = True
+        self.is_tied = False
+        self.tied_anchor = None
+        self.tied_timer = 0
+        self.vel_y = 0
+        self.anim_phase = 0
+
+    def draw(self, screen):
+        if not self.active:
+            return
+
+        body_color = COLORS.get('enemy_body', (131, 92, 173))
+        outline_color = COLORS.get('enemy_outline', (84, 57, 116))
+        eye_color = COLORS.get('enemy_eye', (255, 245, 245))
+
+        body_rect = self.rect
+        pygame.draw.ellipse(screen, body_color, body_rect)
+        pygame.draw.ellipse(screen, outline_color, body_rect, 3)
+
+        # Feet
+        if self.movement == 'flying':
+            wing_span = 8 + int(math.sin(self.anim_phase * 0.25) * 3)
+            left_wing = [
+                (body_rect.x + 4, body_rect.centery),
+                (body_rect.x - wing_span, body_rect.centery - 6),
+                (body_rect.x - wing_span, body_rect.centery + 6),
+            ]
+            right_wing = [
+                (body_rect.right - 4, body_rect.centery),
+                (body_rect.right + wing_span, body_rect.centery - 6),
+                (body_rect.right + wing_span, body_rect.centery + 6),
+            ]
+            pygame.draw.polygon(screen, body_color, left_wing)
+            pygame.draw.polygon(screen, body_color, right_wing)
+            pygame.draw.polygon(screen, outline_color, left_wing, 2)
+            pygame.draw.polygon(screen, outline_color, right_wing, 2)
+        else:
+            leg_y = body_rect.bottom - 4
+            pygame.draw.line(screen, outline_color, (body_rect.x + 10, leg_y), (body_rect.x + 6, leg_y + 8), 3)
+            pygame.draw.line(screen, outline_color, (body_rect.right - 10, leg_y), (body_rect.right - 6, leg_y + 8), 3)
+
+        # Eyes
+        eye_y = body_rect.y + 12
+        left_eye_x = body_rect.x + 14
+        right_eye_x = body_rect.right - 14
+        if self.is_tied:
+            pygame.draw.line(screen, outline_color, (left_eye_x - 3, eye_y - 3), (left_eye_x + 3, eye_y + 3), 2)
+            pygame.draw.line(screen, outline_color, (left_eye_x - 3, eye_y + 3), (left_eye_x + 3, eye_y - 3), 2)
+            pygame.draw.line(screen, outline_color, (right_eye_x - 3, eye_y - 3), (right_eye_x + 3, eye_y + 3), 2)
+            pygame.draw.line(screen, outline_color, (right_eye_x - 3, eye_y + 3), (right_eye_x + 3, eye_y - 3), 2)
+        else:
+            pygame.draw.circle(screen, eye_color, (left_eye_x, eye_y), 4)
+            pygame.draw.circle(screen, eye_color, (right_eye_x, eye_y), 4)
+            pygame.draw.circle(screen, (20, 20, 20), (left_eye_x + 1, eye_y), 2)
+            pygame.draw.circle(screen, (20, 20, 20), (right_eye_x + 1, eye_y), 2)
+
+        # Mouth
+        mouth_y = body_rect.y + 24
+        pygame.draw.arc(screen, outline_color, (body_rect.centerx - 8, mouth_y - 2, 16, 10), math.pi * 0.1, math.pi * 0.9, 2)
+
+        # Thread tie effect
+        if self.is_tied:
+            thread_color = COLORS['thread']
+            pygame.draw.line(screen, thread_color, (body_rect.x + 6, body_rect.y + 10), (body_rect.right - 6, body_rect.y + 14), 3)
+            pygame.draw.line(screen, thread_color, (body_rect.x + 6, body_rect.y + 22), (body_rect.right - 6, body_rect.y + 26), 3)
+            if self.tied_anchor and self.tied_timer > 0:
+                pygame.draw.line(screen, thread_color, self.tied_anchor, self.center, 2)
+
+
 class Level:
     """Contains all objects for a game level"""
     
@@ -494,6 +657,7 @@ class Level:
         self.platforms = []
         self.stitch_points = []
         self.hazards = []
+        self.enemies = []
         self.buttons = []
         self.doors = []
         self.movable_objects = []
@@ -529,6 +693,22 @@ class Level:
             hazard = Hazard(h['x'], h['y'], h.get('width', 40), h.get('height', 40),
                           h.get('type', 'scissors'))
             self.hazards.append(hazard)
+
+        # Load enemies
+        for e in data.get('enemies', []):
+            enemy = Enemy(
+                e['x'],
+                e['y'],
+                e.get('width', 44),
+                e.get('height', 36),
+                e.get('speed', 1.5),
+                e.get('patrol_range', 120),
+                e.get('left'),
+                e.get('right'),
+                e.get('movement', 'ground'),
+                e.get('fly_range_y', 28),
+            )
+            self.enemies.append(enemy)
             
         # Load buttons and doors
         for d in data.get('doors', []):
@@ -561,6 +741,8 @@ class Level:
             sp.update()
         for h in self.hazards:
             h.update()
+        for enemy in self.enemies:
+            enemy.update(self.platforms)
         # Update movable platforms with collision detection including bridges
         for p in self.platforms:
             if p.is_movable:
@@ -597,6 +779,17 @@ class Level:
         # Draw hazards
         for hazard in self.hazards:
             hazard.draw(screen)
+
+        # Draw enemies
+        for enemy in self.enemies:
+            enemy.draw(screen)
+
+    def has_enemy_collision(self, player_rect):
+        """Return True if player collides with any active untied enemy."""
+        for enemy in self.enemies:
+            if enemy.can_hurt_player and player_rect.colliderect(enemy.rect):
+                return True
+        return False
             
     def reset(self):
         """Reset all level objects"""
@@ -610,6 +803,8 @@ class Level:
         for b in self.buttons:
             b.pressed = False
             b.press_timer = 0
+        for enemy in self.enemies:
+            enemy.reset()
 
 
 # ============================================================
@@ -618,28 +813,57 @@ class Level:
 
 LEVELS = [
     # Level 1: Tutorial - Basic Stitching with Door
+    # {
+    #     'name': 'First Stitch',
+    #     'player_start': (100, 550),
+    #     'thread_limit': 700,
+    #     'platforms': [
+    #         {'x': 50, 'y': 600, 'width': 200, 'height': 30},   # Start platform
+    #         {'x': 400, 'y': 600, 'width': 200, 'height': 30},  # Middle platform
+    #         {'x': 500, 'y': 300, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
+    #         {'x': 750, 'y': 550, 'width': 200, 'height': 30},  # End platform with door
+    #     ],
+    #     'stitch_points': [
+    #         {'x': 200, 'y': 500},
+    #         {'x': 400, 'y': 250},   # High point to shoot block
+    #         {'x': 600, 'y': 450},
+    #     ],
+    #     'enemies': [
+    #         {'x': 460, 'y': 470, 'movement': 'flying', 'speed': 1.4, 'left': 380, 'right': 620, 'fly_range_y': 20},
+    #     ],
+    #     'hazards': [],
+    #     'buttons': [
+    #         {'x': 480, 'y': 585, 'linked_door': 0},  # Button on middle platform
+    #     ],
+    #     'doors': [
+    #         {'x': 900, 'y': 470, 'width': 40, 'height': 80},  # Exit door
+    #     ],
+    # },
     {
         'name': 'First Stitch',
-        'player_start': (100, 550),
+        'player_start': (100, 0),
         'thread_limit': 700,
         'platforms': [
-            {'x': 50, 'y': 600, 'width': 200, 'height': 30},   # Start platform
-            {'x': 400, 'y': 600, 'width': 200, 'height': 30},  # Middle platform
-            {'x': 500, 'y': 300, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
-            {'x': 750, 'y': 550, 'width': 200, 'height': 30},  # End platform with door
+            {'x': 10, 'y': 100, 'width': 100, 'height': 10},   # Start platform
+            {'x': 30, 'y': 200, 'width': 200, 'height': 10},  # Middle platform
+            # {'x': 40, 'y': 300, 'width': 300, 'height': 10, 'type': 'movable'},  # Movable block
+            # {'x': 50, 'y': 400, 'width': 400, 'height': 10},  # End platform with door
         ],
-        'stitch_points': [
-            {'x': 200, 'y': 500},
-            {'x': 400, 'y': 250},   # High point to shoot block
-            {'x': 600, 'y': 450},
-        ],
-        'hazards': [],
-        'buttons': [
-            {'x': 480, 'y': 585, 'linked_door': 0},  # Button on middle platform
-        ],
-        'doors': [
-            {'x': 900, 'y': 470, 'width': 40, 'height': 80},  # Exit door
-        ],
+        # 'stitch_points': [
+        #     {'x': 200, 'y': 500},
+        #     {'x': 400, 'y': 250},   # High point to shoot block
+        #     {'x': 600, 'y': 450},
+        # ],
+        # 'enemies': [
+        #     {'x': 460, 'y': 470, 'movement': 'flying', 'speed': 1.4, 'left': 380, 'right': 620, 'fly_range_y': 20},
+        # ],
+        # 'hazards': [],
+        # 'buttons': [
+        #     {'x': 480, 'y': 585, 'linked_door': 0},  # Button on middle platform
+        # ],
+        # 'doors': [
+        #     {'x': 900, 'y': 470, 'width': 40, 'height': 80},  # Exit door
+        # ],
     },
     
     # Level 2: Bridge Building with Door
@@ -659,6 +883,9 @@ LEVELS = [
             {'x': 350, 'y': 480},   # Bridge points
             {'x': 550, 'y': 480},
             {'x': 750, 'y': 430},
+        ],
+        'enemies': [
+            {'x': 640, 'y': 390, 'movement': 'flying', 'speed': 1.6, 'left': 520, 'right': 860, 'fly_range_y': 24},
         ],
         'hazards': [
             {'x': 560, 'y': 455, 'width': 40, 'height': 40, 'type': 'flame'},
@@ -688,6 +915,9 @@ LEVELS = [
             {'x': 600, 'y': 180},   # Another ceiling anchor
             {'x': 900, 'y': 250},
         ],
+        'enemies': [
+            {'x': 760, 'y': 514, 'width': 42, 'height': 34, 'speed': 1.2, 'left': 710, 'right': 900},
+        ],
         'hazards': [
             {'x': 350, 'y': 500, 'width': 50, 'height': 50, 'type': 'scissors'},
             {'x': 550, 'y': 520, 'width': 40, 'height': 40, 'type': 'scissors'},
@@ -716,6 +946,9 @@ LEVELS = [
             {'x': 350, 'y': 150},     # High point to grapple
             {'x': 550, 'y': 250},     # Another grapple
             {'x': 750, 'y': 350},
+        ],
+        'enemies': [
+            {'x': 700, 'y': 300, 'movement': 'flying', 'speed': 1.7, 'left': 610, 'right': 910, 'fly_range_y': 26},
         ],
         'hazards': [
             {'x': 380, 'y': 400, 'width': 44, 'height': 44, 'type': 'flame'},
@@ -748,6 +981,10 @@ LEVELS = [
             {'x': 500, 'y': 150},   # High grapple (to hit movable block)
             {'x': 650, 'y': 350},
             {'x': 900, 'y': 200},   # High grapple
+        ],
+        'enemies': [
+            {'x': 320, 'y': 514, 'speed': 1.4, 'left': 300, 'right': 420},
+            {'x': 840, 'y': 314, 'speed': 1.6, 'left': 810, 'right': 940},
         ],
         'hazards': [
             {'x': 420, 'y': 550, 'width': 40, 'height': 40, 'type': 'flame'},
@@ -783,6 +1020,10 @@ LEVELS = [
             {'x': 550, 'y': 130},   # High point for block 2
             {'x': 700, 'y': 300},
             {'x': 950, 'y': 200},
+        ],
+        'enemies': [
+            {'x': 330, 'y': 464, 'speed': 1.5, 'left': 305, 'right': 420},
+            {'x': 820, 'y': 264, 'speed': 1.7, 'left': 805, 'right': 950},
         ],
         'hazards': [
             {'x': 450, 'y': 500, 'width': 50, 'height': 50, 'type': 'scissors'},
@@ -820,6 +1061,11 @@ LEVELS = [
             {'x': 700, 'y': 250},
             {'x': 900, 'y': 200},
             {'x': 1100, 'y': 150},
+        ],
+        'enemies': [
+            {'x': 270, 'y': 414, 'speed': 1.7, 'left': 250, 'right': 350},
+            {'x': 670, 'y': 314, 'speed': 1.8, 'left': 650, 'right': 750},
+            {'x': 1060, 'y': 214, 'speed': 1.9, 'left': 1045, 'right': 1190},
         ],
         'hazards': [
             {'x': 200, 'y': 380, 'width': 40, 'height': 40, 'type': 'flame'},
@@ -863,6 +1109,10 @@ LEVELS = [
             {'x': 800, 'y': 220},
             {'x': 1000, 'y': 185},  # Right anchor near Block 3 lowered slightly
             {'x': 1150, 'y': 120},
+        ],
+        'enemies': [
+            {'x': 430, 'y': 310, 'movement': 'flying', 'speed': 1.8, 'left': 350, 'right': 560, 'fly_range_y': 26},
+            {'x': 880, 'y': 170, 'movement': 'flying', 'speed': 2.0, 'left': 760, 'right': 1080, 'fly_range_y': 30},
         ],
         'hazards': [
             {'x': 320, 'y': 480, 'width': 50, 'height': 50, 'type': 'scissors'},

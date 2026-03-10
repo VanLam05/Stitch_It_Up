@@ -26,6 +26,9 @@ COLORS = {
     'stitch_point_final': (0, 255, 127), # Spring green (goal)
     'hazard_scissors': (169, 169, 169), # Dark gray scissors
     'hazard_flame': (255, 69, 0),      # Red-orange flame
+    'enemy_body': (131, 92, 173),      # Monster body
+    'enemy_outline': (84, 57, 116),    # Monster outline
+    'enemy_eye': (255, 245, 245),      # Monster eyes
     'button_inactive': (128, 128, 128), # Gray
     'button_active': (50, 205, 50),    # Lime green
     'ui_bg': (30, 30, 40),             # Dark UI

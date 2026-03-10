@@ -305,13 +305,18 @@ class Game:
         hit = self.thread_manager.update(
             self.current_level.stitch_points,
             self.current_level.platforms,
-            self.player
+            self.player,
+            self.current_level.enemies,
         )
         
         if hit:
             hit_info, embed_point = hit
+            hit_type, _ = hit_info
             if embed_point:
-                self._add_hit_particles(embed_point)
+                if hit_type == 'enemy':
+                    self._add_enemy_tie_particles(embed_point)
+                else:
+                    self._add_hit_particles(embed_point)
             
         # Update player
         self.player.update(self.current_level.platforms, bridges)
@@ -401,6 +406,11 @@ class Game:
         # Lose condition: only flames kill the player
         if self.player.check_hazard_collision(self.current_level.hazards, hazard_types={'flame'}):
             self._trigger_lose(LOSE_HAZARD, "Burned by flame!")
+            return
+
+        # Lose condition: touching active monsters
+        if self.current_level.has_enemy_collision(self.player.rect):
+            self._trigger_lose(LOSE_HAZARD, "Caught by a monster!")
             return
             
         # Lose condition: out of thread (only if needle not embedded and can't reach goal)
@@ -527,13 +537,17 @@ class Game:
         
     def _draw_background(self, screen):
         """Draw the game background"""
-        screen.fill(COLORS['background'])
-        
-        # Fabric texture pattern
-        for x in range(0, SCREEN_WIDTH, 30):
-            pygame.draw.line(screen, (50, 47, 55), (x, 0), (x, SCREEN_HEIGHT), 1)
-        for y in range(0, SCREEN_HEIGHT, 30):
-            pygame.draw.line(screen, (50, 47, 55), (0, y), (SCREEN_WIDTH, y), 1)
+        cell_size = 10  # 1 grid cell == 10 world coordinate units
+        color_a = COLORS['background']
+        color_b = (52, 49, 58)
+
+        # Checkerboard background aligned to the game coordinate grid.
+        for y in range(0, SCREEN_HEIGHT, cell_size):
+            row = y // cell_size
+            for x in range(0, SCREEN_WIDTH, cell_size):
+                col = x // cell_size
+                color = color_a if (row + col) % 2 == 0 else color_b
+                pygame.draw.rect(screen, color, (x, y, cell_size, cell_size))
             
         # Void at bottom
         void_rect = pygame.Rect(0, SCREEN_HEIGHT - 50, SCREEN_WIDTH, 100)
@@ -619,6 +633,21 @@ class Game:
                 'life': 20,
                 'color': COLORS['thread'],
                 'size': 3,
+            })
+
+    def _add_enemy_tie_particles(self, pos):
+        """Add particles when an enemy is tied by thread."""
+        for _ in range(16):
+            angle = random.random() * math.pi * 2
+            speed = 2 + random.random() * 2
+            self.particles.append({
+                'x': pos[0],
+                'y': pos[1],
+                'vx': math.cos(angle) * speed,
+                'vy': math.sin(angle) * speed - 0.5,
+                'life': 24,
+                'color': COLORS['thread'],
+                'size': 4,
             })
             
     def _add_victory_particle(self):

@@ -58,7 +58,7 @@ class Needle:
         self.embedded = False
         self.embed_point = None
         
-    def update(self, stitch_points, platforms):
+    def update(self, stitch_points, platforms, enemies=None):
         """Update needle position and check for hits"""
         if not self.active:
             return None
@@ -81,12 +81,16 @@ class Needle:
                 return None
         
         # Check first collision along travel segment.
-        hit = self._check_first_collision(prev_tip, current_tip, stitch_points, platforms)
+        hit = self._check_first_collision(prev_tip, current_tip, stitch_points, platforms, enemies)
         if hit:
             hit_type, hit_object, hit_pos = hit
             if hit_type == 'stitch_point':
                 self.embed(hit_object.center)
                 return ('stitch_point', hit_object)
+
+            if hit_type == 'enemy':
+                self.embed(hit_pos)
+                return ('enemy', hit_object)
 
             self.embed(hit_pos)
             return ('platform', hit_object)
@@ -116,7 +120,7 @@ class Needle:
                 return platform
         return None
 
-    def _check_first_collision(self, start_tip, end_tip, stitch_points, platforms):
+    def _check_first_collision(self, start_tip, end_tip, stitch_points, platforms, enemies=None):
         """Return the first object hit along the needle segment this frame."""
         sx, sy = start_tip
         ex, ey = end_tip
@@ -171,6 +175,30 @@ class Needle:
             if t < best_t:
                 best_t = t
                 best_hit = ('platform', platform, entry)
+
+        # Enemy test using line-rect clip intersection.
+        for enemy in (enemies or []):
+            if not getattr(enemy, 'can_be_targeted', False):
+                continue
+
+            clipped = enemy.rect.clipline((sx, sy), (ex, ey))
+            if not clipped:
+                continue
+
+            if len(clipped) == 2 and isinstance(clipped[0], (tuple, list)):
+                p1, p2 = clipped
+            else:
+                p1 = (clipped[0], clipped[1])
+                p2 = (clipped[2], clipped[3])
+
+            d1 = math.sqrt((p1[0] - sx) ** 2 + (p1[1] - sy) ** 2)
+            d2 = math.sqrt((p2[0] - sx) ** 2 + (p2[1] - sy) ** 2)
+            entry = p1 if d1 <= d2 else p2
+            t = (math.sqrt((entry[0] - sx) ** 2 + (entry[1] - sy) ** 2) / seg_len)
+
+            if t < best_t:
+                best_t = t
+                best_hit = ('enemy', enemy, entry)
 
         return best_hit
     
@@ -359,12 +387,12 @@ class ThreadManager:
             return True
         return False
     
-    def update(self, stitch_points, platforms, player=None):
+    def update(self, stitch_points, platforms, player=None, enemies=None):
         """Update needle and all thread connections"""
         needle_was_active = self.needle.active
 
         # Update needle
-        hit = self.needle.update(stitch_points, platforms)
+        hit = self.needle.update(stitch_points, platforms, enemies)
         embed_point = None
         
         if hit:
@@ -407,6 +435,14 @@ class ThreadManager:
         
         # Check if enough thread
         if thread_cost > self.thread_remaining:
+            self.needle.recall()
+            return
+
+        # Enemy takedown: spend thread and trigger tied-fall animation.
+        if hit_type == 'enemy':
+            self.thread_remaining -= thread_cost
+            if hasattr(hit_object, 'hit_by_thread'):
+                hit_object.hit_by_thread(self.last_anchor_point)
             self.needle.recall()
             return
             
