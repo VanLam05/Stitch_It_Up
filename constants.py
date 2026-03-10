@@ -40,8 +40,8 @@ COLORS = {
 # Physics
 GRAVITY = 0.5
 MAX_FALL_SPEED = 15
-PLAYER_SPEED = 5
-PLAYER_JUMP_FORCE = -13
+PLAYER_SPEED = 4.5
+PLAYER_JUMP_FORCE = -10
 FRICTION = 0.85
 
 # Needle/Thread Mechanics
@@ -58,6 +58,7 @@ PULL_FORCE = 0.3
 DEFAULT_THREAD_LENGTH = 800
 THREAD_CONSUMPTION_RATE = 1.0  # pixels per pixel traveled
 THREAD_RECOVERY_RATE = 0.8    # recovery when unstitching
+MISS_SHOT_THREAD_COST = 50    # fixed thread lost when a shot misses everything
 
 # Stitch Points
 STITCH_POINT_RADIUS = 15

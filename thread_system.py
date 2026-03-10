@@ -361,6 +361,8 @@ class ThreadManager:
     
     def update(self, stitch_points, platforms, player=None):
         """Update needle and all thread connections"""
+        needle_was_active = self.needle.active
+
         # Update needle
         hit = self.needle.update(stitch_points, platforms)
         embed_point = None
@@ -383,6 +385,11 @@ class ThreadManager:
         # Return hit info and embed_point
         if hit:
             return (hit, embed_point)
+
+        # Missed shot: needle stopped flying without attaching to anything.
+        if needle_was_active and not self.needle.active and not self.needle.embedded:
+            self.thread_remaining = max(0, self.thread_remaining - MISS_SHOT_THREAD_COST)
+
         return None
     
     def _handle_hit(self, hit_type, hit_object, player):
