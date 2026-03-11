@@ -920,7 +920,7 @@ LEVELS = [
             {'x': 750, 'y': 350},
         ],
         'enemies': [
-            {'x': 700, 'y': 430, 'movement': 'flying', 'speed': 1.7, 'left': 600, 'right': 1000, 'fly_range_y': 30},
+            {'x': 700, 'y': 430, 'movement': 'flying', 'speed': 2.0, 'left': 600, 'right': 1000, 'fly_range_y': 30},
         ],
         'hazards': [
             # {'x': 380, 'y': 400, 'width': 44, 'height': 44, 'type': 'flame'},
@@ -935,39 +935,23 @@ LEVELS = [
     
     # Level 5: Final Challenge - Combined mechanics with door puzzle
     {
-        'name': 'Final Challenge',
-        'player_start': (80, 550),
-        'thread_limit': 1200,
+        'name': 'Level 5',
+        'player_start': (50, 500),
+        'thread_limit': 5000,
         'platforms': [
-            {'x': 30, 'y': 600, 'width': 150, 'height': 30},      # Start
-            {'x': 300, 'y': 550, 'width': 120, 'height': 30},     
-            {'x': 550, 'y': 200, 'width': 70, 'height': 25, 'type': 'movable'},  # Movable block
-            {'x': 550, 'y': 450, 'width': 100, 'height': 30},     
-            {'x': 800, 'y': 350, 'width': 150, 'height': 30},     
-            {'x': 1050, 'y': 300, 'width': 150, 'height': 30},    # Final platform with door
+            {'x': 50, 'y': 500, 'width': 150, 'height': 10},   # Start platform
+            {'x': 50, 'y': 400, 'width': 150, 'height': 10},  # Middle platform
+            {'x': 700, 'y': 420, 'width': 200, 'height': 30},  # Movable block
+            # {'x': 50, 'y': 400, 'width': 400, 'height': 10},  # End platform with door
         ],
-        'stitch_points': [
-            {'x': 100, 'y': 500},
-            {'x': 350, 'y': 450},
-            {'x': 280, 'y': 250},   # Ceiling grapple
-            {'x': 500, 'y': 150},   # High grapple (to hit movable block)
-            {'x': 650, 'y': 350},
-            {'x': 900, 'y': 200},   # High grapple
-        ],
+        # 'stitch_points': [
+        #     {'x': 200, 'y': 500},
+        #     {'x': 400, 'y': 250},   # High point to shoot block
+        #     {'x': 600, 'y': 450},
+        # ],
         'enemies': [
-            {'x': 320, 'y': 514, 'speed': 1.4, 'left': 300, 'right': 420},
-            {'x': 840, 'y': 314, 'speed': 1.6, 'left': 810, 'right': 940},
-        ],
-        'hazards': [
-            {'x': 420, 'y': 550, 'width': 40, 'height': 40, 'type': 'flame'},
-            {'x': 720, 'y': 400, 'width': 50, 'height': 50, 'type': 'scissors'},
-            {'x': 930, 'y': 320, 'width': 40, 'height': 40, 'type': 'flame'},
-        ],
-        'buttons': [
-            {'x': 560, 'y': 435, 'linked_door': 0},  # Button under movable block
-        ],
-        'doors': [
-            {'x': 1150, 'y': 220, 'width': 40, 'height': 80},  # Exit door
+            {'x': 460, 'y': 380, 'movement': 'flying', 'speed': 3, 'left': 400, 'right': 700, 'fly_range_y': 10},
+            {'x': 500, 'y': 460, 'width': 42, 'height': 34, 'speed': 3, 'left': 390, 'right': 540},
         ],
     },
     
