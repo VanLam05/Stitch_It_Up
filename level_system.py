@@ -812,83 +812,56 @@ class Level:
 # ============================================================
 
 LEVELS = [
-    # Level 1: Tutorial - Basic Stitching with Door
-    # {
-    #     'name': 'First Stitch',
-    #     'player_start': (100, 550),
-    #     'thread_limit': 700,
-    #     'platforms': [
-    #         {'x': 50, 'y': 600, 'width': 200, 'height': 30},   # Start platform
-    #         {'x': 400, 'y': 600, 'width': 200, 'height': 30},  # Middle platform
-    #         {'x': 500, 'y': 300, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
-    #         {'x': 750, 'y': 550, 'width': 200, 'height': 30},  # End platform with door
-    #     ],
-    #     'stitch_points': [
-    #         {'x': 200, 'y': 500},
-    #         {'x': 400, 'y': 250},   # High point to shoot block
-    #         {'x': 600, 'y': 450},
-    #     ],
-    #     'enemies': [
-    #         {'x': 460, 'y': 470, 'movement': 'flying', 'speed': 1.4, 'left': 380, 'right': 620, 'fly_range_y': 20},
-    #     ],
-    #     'hazards': [],
-    #     'buttons': [
-    #         {'x': 480, 'y': 585, 'linked_door': 0},  # Button on middle platform
-    #     ],
-    #     'doors': [
-    #         {'x': 900, 'y': 470, 'width': 40, 'height': 80},  # Exit door
-    #     ],
-    # },
+    # Level 1:
     {
-        'name': 'First Stitch',
-        'player_start': (100, 0),
-        'thread_limit': 700,
+        'name': 'Level 1',
+        'player_start': (20, 570),
+        'thread_limit': 1500,
         'platforms': [
-            {'x': 10, 'y': 100, 'width': 100, 'height': 10},   # Start platform
-            {'x': 30, 'y': 200, 'width': 200, 'height': 10},  # Middle platform
-            # {'x': 40, 'y': 300, 'width': 300, 'height': 10, 'type': 'movable'},  # Movable block
-            # {'x': 50, 'y': 400, 'width': 400, 'height': 10},  # End platform with door
+            {'x': 10, 'y': 600, 'width': 100, 'height': 30},  
+            {'x': 300, 'y': 400, 'width': 150, 'height': 30},  
+            {'x': 650, 'y': 100, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
+            {'x': 600, 'y': 400, 'width': 200, 'height': 30}, 
+            {'x': 1000, 'y': 250, 'width': 150, 'height': 30},
         ],
-        # 'stitch_points': [
-        #     {'x': 200, 'y': 500},
-        #     {'x': 400, 'y': 250},   # High point to shoot block
-        #     {'x': 600, 'y': 450},
-        # ],
-        # 'enemies': [
-        #     {'x': 460, 'y': 470, 'movement': 'flying', 'speed': 1.4, 'left': 380, 'right': 620, 'fly_range_y': 20},
-        # ],
-        # 'hazards': [],
-        # 'buttons': [
-        #     {'x': 480, 'y': 585, 'linked_door': 0},  # Button on middle platform
-        # ],
-        # 'doors': [
-        #     {'x': 900, 'y': 470, 'width': 40, 'height': 80},  # Exit door
-        # ],
+        'stitch_points': [
+            {'x': 200, 'y': 470},
+            {'x': 520, 'y': 300},
+            {'x': 900, 'y': 300},
+        ],
+        'enemies': [
+        ],
+        'hazards': [],
+        'buttons': [
+            {'x': 650, 'y': 385, 'linked_door': 0},  # Button on middle platform
+        ],
+        'doors': [
+            {'x': 1050, 'y': 170, 'width': 40, 'height': 80},  # Exit door
+        ],
     },
     
-    # Level 2: Bridge Building with Door
+    # Level 2:
     {
-        'name': 'Bridge the Gap',
-        'player_start': (100, 450),
-        'thread_limit': 900,
+        'name': 'Level 2',
+        'player_start': (50, 470),
+        'thread_limit': 2000,
         'platforms': [
-            {'x': 50, 'y': 500, 'width': 150, 'height': 30},
+            {'x': 10, 'y': 500, 'width': 150, 'height': 30},
             {'x': 350, 'y': 200, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
-            {'x': 500, 'y': 500, 'width': 150, 'height': 30},
+            {'x': 500, 'y': 500, 'width': 200, 'height': 30},
             {'x': 950, 'y': 450, 'width': 150, 'height': 30},
         ],
         'stitch_points': [
-            {'x': 150, 'y': 480},
-            {'x': 300, 'y': 150},   # High point for block
+            {'x': 275, 'y': 350},   # High point for block
             {'x': 350, 'y': 480},   # Bridge points
             {'x': 550, 'y': 480},
             {'x': 750, 'y': 430},
         ],
         'enemies': [
-            {'x': 640, 'y': 390, 'movement': 'flying', 'speed': 1.6, 'left': 520, 'right': 860, 'fly_range_y': 24},
+            {'x': 700, 'y': 375, 'movement': 'flying', 'speed': 1.6, 'left': 520, 'right': 860, 'fly_range_y': 24},
         ],
         'hazards': [
-            {'x': 560, 'y': 455, 'width': 40, 'height': 40, 'type': 'flame'},
+            {'x': 650, 'y': 460, 'width': 40, 'height': 40, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 520, 'y': 485, 'linked_door': 0},  # Button
@@ -898,41 +871,41 @@ LEVELS = [
         ],
     },
     
-    # Level 3: Grappling Introduction with Door
+    # Level 3:
     {
-        'name': 'Swing Across',
+        'name': 'Level 3',
         'player_start': (100, 550),
-        'thread_limit': 1000,
+        'thread_limit': 3000,
         'platforms': [
             {'x': 50, 'y': 600, 'width': 180, 'height': 30},
-            {'x': 450, 'y': 180, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
+            {'x': 470, 'y': 230, 'width': 60, 'height': 25, 'type': 'movable'},  # Movable block
             {'x': 700, 'y': 550, 'width': 200, 'height': 30},
-            {'x': 1000, 'y': 500, 'width': 180, 'height': 30},
+            {'x': 1000, 'y': 400, 'width': 180, 'height': 30},
         ],
         'stitch_points': [
             {'x': 400, 'y': 200},   # Ceiling anchor for grapple
-            {'x': 500, 'y': 130},   # High point to hit block
-            {'x': 600, 'y': 180},   # Another ceiling anchor
-            {'x': 900, 'y': 250},
+            {'x': 500, 'y': 300},   # High point to hit block
+            {'x': 600, 'y': 200},   # Another ceiling anchor
+            {'x': 950, 'y': 470},
         ],
         'enemies': [
             {'x': 760, 'y': 514, 'width': 42, 'height': 34, 'speed': 1.2, 'left': 710, 'right': 900},
         ],
         'hazards': [
-            {'x': 350, 'y': 500, 'width': 50, 'height': 50, 'type': 'scissors'},
-            {'x': 550, 'y': 520, 'width': 40, 'height': 40, 'type': 'scissors'},
+            {'x': 275, 'y': 400, 'width': 50, 'height': 50, 'type': 'scissors'},
+            {'x': 800, 'y': 515, 'width': 40, 'height': 40, 'type': 'flame'},
         ],
         'buttons': [
-            {'x': 750, 'y': 535, 'linked_door': 0},  # Button on platform
+            {'x': 705, 'y': 535, 'linked_door': 0},  # Button on platform
         ],
         'doors': [
-            {'x': 1120, 'y': 420, 'width': 40, 'height': 80},  # Exit door
+            {'x': 1120, 'y': 320, 'width': 40, 'height': 80},  # Exit door
         ],
     },
     
-    # Level 4: Door Puzzle - Shoot wood block to press button and open door
+    # Level 4: 
     {
-        'name': 'Open the Door',
+        'name': 'Level 4',
         'player_start': (100, 450),
         'thread_limit': 1000,
         'platforms': [
