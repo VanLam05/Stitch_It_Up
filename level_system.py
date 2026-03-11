@@ -915,16 +915,15 @@ LEVELS = [
             {'x': 950, 'y': 400, 'width': 200, 'height': 30},     # End platform (with door)
         ],
         'stitch_points': [
-            {'x': 200, 'y': 400},     # For swing/bridge
-            {'x': 350, 'y': 150},     # High point to grapple
+            {'x': 300, 'y': 300},     # For swing/bridge
             {'x': 550, 'y': 250},     # Another grapple
             {'x': 750, 'y': 350},
         ],
         'enemies': [
-            {'x': 700, 'y': 300, 'movement': 'flying', 'speed': 1.7, 'left': 610, 'right': 910, 'fly_range_y': 26},
+            {'x': 700, 'y': 430, 'movement': 'flying', 'speed': 1.7, 'left': 600, 'right': 1000, 'fly_range_y': 30},
         ],
         'hazards': [
-            {'x': 380, 'y': 400, 'width': 44, 'height': 44, 'type': 'flame'},
+            # {'x': 380, 'y': 400, 'width': 44, 'height': 44, 'type': 'flame'},
         ],
         'buttons': [
             {'x': 420, 'y': 485, 'linked_door': 0},  # Button under the movable block

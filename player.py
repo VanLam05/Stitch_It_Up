@@ -19,8 +19,11 @@ class Player:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.width = PLAYER_WIDTH
-        self.height = PLAYER_HEIGHT
+        # Keep visual body size stable, but allow larger collision box.
+        self.visual_width = PLAYER_WIDTH
+        self.visual_height = PLAYER_HEIGHT
+        self.width = int(PLAYER_WIDTH * PLAYER_HITBOX_SCALE_X)
+        self.height = int(PLAYER_HEIGHT * PLAYER_HITBOX_SCALE_Y)
         self.vel_x = 0
         self.vel_y = 0
         
@@ -294,8 +297,8 @@ class Player:
     def draw(self, screen):
         """Draw the player"""
         if Player._kim_frames:
-            # Keep sprite larger than collision box so the needle remains readable.
-            target_h = int(self.height * 2.5)
+            # Keep original character visual size (larger sprite) independent from hitbox.
+            target_h = int(self.visual_height * 2.5)
             current_frame = (pygame.time.get_ticks() // Player._kim_frame_ms) % len(Player._kim_frames)
             base_image = Player._kim_frames[current_frame]
             aspect = base_image.get_width() / max(1, base_image.get_height())
@@ -308,7 +311,6 @@ class Player:
                 sprite = pygame.transform.flip(sprite, True, False)
 
             draw_x = int(self.x + self.width // 2 - target_w // 2)
-            # Align sprite bottom with collision-box bottom so the tip matches ground contact.
             draw_y = int(self.y + self.height - target_h)
             screen.blit(sprite, (draw_x, draw_y))
             return

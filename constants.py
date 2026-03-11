@@ -70,6 +70,9 @@ STITCH_POINT_PULSE_SPEED = 0.05
 # Player Dimensions
 PLAYER_WIDTH = 30
 PLAYER_HEIGHT = 45
+# Collision-only multiplier for player box (visual size stays unchanged).
+PLAYER_HITBOX_SCALE_X = 1.45
+PLAYER_HITBOX_SCALE_Y = 1.45
 
 # Platform Types
 PLATFORM_NORMAL = 'normal'
