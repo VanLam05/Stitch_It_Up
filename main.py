@@ -42,8 +42,7 @@ class Game:
         # Level management
         self.current_level_index = 0
         self.current_level = None
-        # self.unlocked_levels = [True] + [False] * (get_level_count() - 1)
-        self.unlocked_levels = [True] * get_level_count()  # Unlock all levels for testing
+        self.unlocked_levels = [True] + [False] * (get_level_count() - 1)
        
         # Game objects
         self.player = None
@@ -252,6 +251,11 @@ class Game:
                 
     def start_level(self, level_index):
         """Start a specific level"""
+        if level_index < 0 or level_index >= len(self.unlocked_levels):
+            return
+        if not self.unlocked_levels[level_index]:
+            return
+
         self.current_level_index = level_index
         self.current_level = get_level(level_index)
         
